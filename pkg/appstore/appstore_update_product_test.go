@@ -116,6 +116,8 @@ var _ = Describe("AppStore (Update Product)", func() {
 		Entry("latest iPad", "", PlatformIPad),
 		Entry("explicit historical version", testVersionID, PlatformIPhone),
 		Entry("explicit macOS version", testVersionID, PlatformMacOS),
+		Entry("explicit tvOS version", testVersionID, PlatformAppleTV),
+		Entry("explicit visionOS version", testVersionID, PlatformVisionOS),
 		Entry("explicit version without a platform", testVersionID, Platform("")),
 	)
 
@@ -231,8 +233,6 @@ var _ = Describe("AppStore (Update Product)", func() {
 			Expect(actual).To(Equal(response))
 		},
 		Entry("missing endpoint", PlatformIPhone, "", "", "“Messenger” No Longer Available", 200),
-		Entry("tvOS", PlatformAppleTV, testUpdateEndpoint, "", "“Messenger” No Longer Available", 200),
-		Entry("visionOS", PlatformVisionOS, testUpdateEndpoint, "", "“Messenger” No Longer Available", 200),
 		Entry("license failure", PlatformIPhone, testUpdateEndpoint, FailureTypeLicenseNotFound, "“Messenger” No Longer Available", 200),
 		Entry("other message", PlatformIPhone, testUpdateEndpoint, "", "Sign in required", 200),
 		Entry("HTTP failure", PlatformIPhone, testUpdateEndpoint, "", "“Messenger” No Longer Available", 403),
@@ -290,20 +290,6 @@ var _ = Describe("AppStore (Update Product)", func() {
 		_, _, err := store.sendDownloadProduct(account, app, testGUID, testVersionID, PlatformIPhone)
 		Expect(err).To(MatchError("invalid download endpoint in bag"))
 	})
-
-	DescribeTable("does not extend the fallback to unverified platforms",
-		func(versionID string, platform Platform) {
-			previous := expectPrimary()
-			mockDownloadClient.EXPECT().Send(gomock.Any()).After(previous).
-				Return(http.Result[downloadResult]{}, redownloadErr)
-
-			_, resolvedPlatform, err := store.sendDownloadProduct(account, app, testGUID, versionID, platform)
-			Expect(errors.Is(err, redownloadErr)).To(BeTrue())
-			Expect(resolvedPlatform).To(Equal(platform))
-		},
-		Entry("pinned tvOS", testVersionID, PlatformAppleTV),
-		Entry("pinned visionOS", testVersionID, PlatformVisionOS),
-	)
 
 	It("propagates an update error without retrying again", func() {
 		previous := expectPrimary()

@@ -77,7 +77,8 @@ func (t *appstore) sendDownloadProduct(acc Account, app App, guid, externalVersi
 
 	redownloadRes, err := t.downloadClient.Send(t.downloadProductRequest(redownload, acc, app, guid, externalVersionID))
 	if bag.UpdateEndpoint != "" && externalVersionID != "" &&
-		(platform == "" || platform == PlatformIPhone || platform == PlatformIPad || platform == PlatformMacOS) &&
+		(platform == "" || platform == PlatformIPhone || platform == PlatformIPad || platform == PlatformMacOS ||
+			platform == PlatformAppleTV || platform == PlatformVisionOS) &&
 		(isEmptyRedownloadError(err) || (err == nil && isUnavailableDownloadProductResponse(redownloadRes))) {
 		updateRes, updateErr := t.sendUpdateProduct(bag.UpdateEndpoint, acc, app, guid, externalVersionID)
 
@@ -108,9 +109,9 @@ func (t *appstore) sendUpdateProduct(endpoint string, acc Account, app App, guid
 		return http.Result[downloadResult]{}, err
 	}
 
-	// The bag's updateProduct can serve pinned iOS and macOS versions when redownload
-	// returns an empty HTTP 500 or a message-only availability error. Keep
-	// the same session and version selection.
+	// The bag's updateProduct can serve pinned iOS, macOS, tvOS, and visionOS
+	// versions when redownload returns an empty HTTP 500 or a message-only
+	// availability error. Keep the same session and version selection.
 	res, err := t.downloadClient.Send(t.downloadProductRequest(update, acc, app, guid, externalVersionID))
 	if err != nil {
 		return res, fmt.Errorf("failed to send update request: %w", err)
